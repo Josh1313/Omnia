@@ -1,4 +1,6 @@
 import streamlit as st
+import openai
+from openai import OpenAI, BadRequestError
 from subprocess import run, CalledProcessError, PIPE
 from langchain_community.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain_community.chat_models import ChatOpenAI
@@ -22,6 +24,36 @@ def app():
     model_list = os.getenv("MODEL_LIST", "llama3.2, gemma2:2b, tinyllama,  llama3,mistral,phi3,llama2,brxce/stable-diffusion-prompt-generator").split(",")
     embedding_model_list = os.getenv("EMBEDDING_MODEL_LIST", "all-MiniLM-L6-v2").split(",")
     ollama_host_default = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+    
+    def validate_openai_api_key(api_key: str) -> bool:
+        """
+        Valida si una clave de API de OpenAI es correcta.
+        Realiza una llamada de prueba a un endpoint válido (e.g., completions).
+        """
+        try:
+            # Inicializar el cliente de OpenAI
+            client = OpenAI(api_key=api_key)
+            
+            # Llamada de prueba al modelo más pequeño y rápido
+            client.chat.completions.create(
+                model="gpt-4o-mini", 
+                messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Hello!"}
+            ],
+            max_tokens=5
+        )
+            return True  # Clave válida
+        except BadRequestError as ai_err:
+            # Extraer mensaje del error de OpenAI
+            ai_response_msg = ai_err.body.get("message", "Unknown error")
+            st.warning(f"Invalid OpenAI API Key: {ai_response_msg}. Please check your key and try again.")
+            return False
+        except Exception as e:
+            # Manejar errores genéricos
+            st.error(f"An unexpected error occurred: {str(e)}")
+            return False
+
     
     def get_container_id(image_name: str, container_name: str) -> Optional[str]:
         """
@@ -52,6 +84,19 @@ def app():
         except CalledProcessError as e:
             st.error(f"Failed to execute Docker command. Details: {e.stderr.strip()}")
             return None
+        
+    def is_model_available(model_name: str, container_id: str) -> bool:
+        """
+        Verifica si un modelo ya está descargado en el contenedor de Ollama.
+        """
+        try:
+            check_command = f"docker exec {container_id} ollama list"
+            result = run(check_command.split(), capture_output=True, text=True, check=True)
+            available_models = result.stdout.lower()
+            return model_name.lower() in available_models
+        except CalledProcessError as e:
+            st.error(f"Error checking model availability: {e.stderr.strip()}")
+            return False    
 
     def ensure_model_downloaded(model_name: str, image_name: str = "ollama/ollama:latest", container_name: str = "omnia-ollama-1", max_retries: int = 3) -> bool:
         """
@@ -65,7 +110,12 @@ def app():
             st.error("Could not find the required container to pull the model.")
             return False
         
-        # Pull the model using the container ID
+        if is_model_available(model_name, container_id):
+            st.success(f"Model '{model_name}' is already available!")
+            return True
+        
+        # Si el modelo no está disponible, intenta descargarlo
+        st.info(f"Downloading model '{model_name}'...")
         pull_command = f"docker exec {container_id} ollama pull {model_name}"
         retry_count = 0
         
@@ -89,6 +139,10 @@ def app():
     
     
     def configure_model() -> Tuple[Optional[Any], Optional[Any], Optional[str], Optional[bool]]:
+        """
+        Configura modelos y embeddings, permitiendo la selección entre OpenAI y modelos locales.
+        """
+        
         st.sidebar.subheader("Model Configuration")
         model_type = st.sidebar.radio("Select Model Type:", options=["Local (Custom Models)", "OpenAI"], index=0)
         
@@ -99,6 +153,10 @@ def app():
             openai_api_key = st.sidebar.text_input("OpenAI API Key:", type="password", placeholder="Enter OpenAI API Key")
             if not openai_api_key:
                 st.sidebar.warning("OpenAI API Key is required to use OpenAI models.")
+            else:
+                # Validar la clave API antes de proceder
+                if not validate_openai_api_key(openai_api_key):
+                    return None, None, None, False  # Detener la configuración si la clave es inválida
             
             llm_model = st.sidebar.selectbox("Choose OpenAI LLM Model:", options=["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"], index=0)
             embedding_model = st.sidebar.selectbox("Choose OpenAI Embedding Model:", options=["text-embedding-ada-002"], index=0)

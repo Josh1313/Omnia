@@ -277,3 +277,39 @@ local df:                                      ids  ...                         
 Db settings in files.py : <chromadb.api.fastapi.FastAPI object at 0x7fbe28f18850> y sus collection name :vectordb
 Files DataFrame:                                               Files
 0  Marian Rojas Estapé - Cómo hacer que te pasen ...
+Db settings in cromadblocal : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+local collections: name='vectordb' id=UUID('eb33d2d9-c08f-4ca4-8cdd-0ee91f093a10') metadata=None 
+local df: Empty DataFrame
+Columns: [ids, embeddings, metadatas, documents]
+Index: [] 
+Db settings in files.py : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+Files DataFrame:Empty DataFrame
+Columns: [Files]
+Index: []
+Db settings in cromadblocal : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+local collections: name='vectordb' id=UUID('eb33d2d9-c08f-4ca4-8cdd-0ee91f093a10') metadata=None 
+local df: Empty DataFrame
+Columns: [ids, embeddings, metadatas, documents]
+Index: [] 
+Db settings in files.py : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+Files DataFrame:Empty DataFrame
+Columns: [Files]
+Index: []
+Db settings in cromadblocal : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+local collections: name='vectordb' id=UUID('eb33d2d9-c08f-4ca4-8cdd-0ee91f093a10') metadata=None 
+local df: Empty DataFrame
+Columns: [ids, embeddings, metadatas, documents]
+Index: [] 
+Db settings in files.py : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+Files DataFrame:Empty DataFrame
+Columns: [Files]
+Index: []
+Db settings in cromadblocal : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+local collections: name='vectordb' id=UUID('eb33d2d9-c08f-4ca4-8cdd-0ee91f093a10') metadata=None 
+local df: Empty DataFrame
+Columns: [ids, embeddings, metadatas, documents]
+Index: [] 
+Db settings in files.py : <chromadb.api.fastapi.FastAPI object at 0x7f6d5c3dcb90> y sus collection name :vectordb
+Files DataFrame:Empty DataFrame
+Columns: [Files]
+Index: []
