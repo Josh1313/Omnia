@@ -1,4 +1,3 @@
-
 from langchain.chains import RetrievalQA
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_community.llms import Ollama
@@ -74,17 +73,20 @@ def response(query:str) -> str:
         
         # Realizar la solicitud directamente al cliente de OpenAI (Grok)
         def grok_query(client, model_name, user_query):
+            # Obtener el mensaje del assistant_prompt
+            prompt = assistant_prompt().format_prompt(question=user_query, context="")
+            messages = [
+                {"role": "system", "content": prompt.messages[0].content},
+                {"role": "user", "content": user_query},
+            ]
             response = client.chat.completions.create(
                 model=model_name,
-                messages=[
-                    {"role": "system", "content": "You are Grok, a chatbot inspired by the Hitchhiker's Guide to the Galaxy."},
-                    {"role": "user", "content": user_query},
-                ],
+                messages=messages,
                 max_tokens=500,
             )
             return response.choices[0].message.content
 
-        return grok_query(client, model_name, query)    
+        return grok_query(client, model_name, query)     
     else:
         # Configurar modelo OpenAI
         st.write(f"Using OpenAI model: {llm_config}")
@@ -110,3 +112,4 @@ def response(query:str) -> str:
     else:
         # Si no hay embeddings, directamente interactuar con el modelo LLM
         return llm.predict(query)
+

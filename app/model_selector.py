@@ -28,6 +28,25 @@ def app():
     embedding_model_list = os.getenv("EMBEDDING_MODEL_LIST", "all-MiniLM-L6-v2").split(",")
     ollama_host_default = os.getenv("OLLAMA_HOST", "http://ollama:11434")
     
+    def is_model_selected(model_name: Optional[str]) -> bool:
+        """
+        Verifica si el modelo ha sido seleccionado por el usuario.
+        """
+        if not model_name:
+            st.warning("No model selected. Please select a model before proceeding.")
+            return False
+        return True
+
+    def is_embedding_selected(embedding_name: Optional[str]) -> bool:
+        """
+        Verifica si un modelo de embedding ha sido seleccionado.
+        """
+        if not embedding_name:
+            st.warning("No embedding selected. Please select an embedding before proceeding.")
+            return False
+        return True
+
+    
     def validate_openai_api_key(api_key: str) -> bool:
         """
         Valida si una clave de API de OpenAI es correcta.
@@ -163,7 +182,7 @@ def app():
         """
         
         st.sidebar.subheader("Model Configuration")
-        model_type = st.sidebar.radio("Select Model Type:", options=["Local (Custom Models)", "OpenAI","Grok"], index=0)
+        model_type = st.sidebar.radio("Select Model Type:", options=["Local (Custom Models)", "OpenAI","Grok"])
         
         llm, embeddings, openai_api_key,xai_api_key, base_url = None, None, None, None, None
         use_openai = False
@@ -191,7 +210,7 @@ def app():
             xai_api_key  = st.sidebar.text_input("Grok API Key:", type="password", placeholder="Enter XAI API Key")
             base_url = st.sidebar.text_input("Grok Base URL:", value=DEFAULT_GROK_BASE_URL)
             if xai_api_key and validate_grok_api_key(xai_api_key, base_url):
-                grok_model = st.sidebar.selectbox("Choose Grok Model:", options=["grok-beta"])
+                grok_model = st.sidebar.selectbox("Choose Grok Model:", options=["grok-beta","grok-2-vision-1212"])
                 
                 # Configurar cliente de Grok
                 client = OpenAI(api_key=xai_api_key, base_url=base_url)
@@ -203,9 +222,11 @@ def app():
                 
         else:
             # Selección dinámica de modelos locales
-            local_model_name = st.sidebar.selectbox("Choose Local Model:", options=model_list, index=0)
+            local_model_name = st.sidebar.selectbox("Choose Local Model:", options=model_list, index=None)
+            if not is_model_selected(local_model_name):
+                return None, None, None, None, None, False  # Detener si no hay modelo seleccionado
+
             ollama_host = st.sidebar.text_input("Enter Ollama Host:", value=ollama_host_default, help="Default: http://localhost:11434")
-            
             # Ensure the model is downloaded
             if ensure_model_downloaded(local_model_name):
                 llm = {"model_name": local_model_name, "ollama_host": ollama_host}
@@ -213,11 +234,9 @@ def app():
                 st.error(f"Could not configure the model '{local_model_name}'. Please try again.")
                 return None, None, None, None, None,  False  # Abort configuration
             
-            embedding_model_name = st.sidebar.selectbox(
-                "Choose Embedding Model:",
-                options=embedding_model_list,
-                index=0
-            )
+            embedding_model_name = st.sidebar.selectbox("Choose Embedding Model:",options=embedding_model_list,index=None)
+            if not is_embedding_selected(embedding_model_name):
+                return None, None, None, None, None, False  # Detener si no hay embedding seleccionado
             embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
         
         return llm, embeddings, openai_api_key, xai_api_key, base_url,  use_openai
