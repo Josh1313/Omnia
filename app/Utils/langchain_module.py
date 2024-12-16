@@ -1,3 +1,4 @@
+
 from langchain.chains import RetrievalQA
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_community.llms import Ollama
@@ -40,22 +41,19 @@ def response(query:str) -> str:
         st.error("No embeddings or LLM configured. Please configure these settings in the Model Selector.")
         return "Configuration missing. Please select a model and embeddings."
 
-    # Cargar embeddings dinámicos
+    # Cargar embeddings dinámicos (si existen)
     embeddings = st.session_state["embeddings"]
-    st.write(f"Using embeddings: {type(embeddings).__name__}")
-
-    # Seleccionar la configuración correcta de Chroma settings
-    use_openai = "OpenAIEmbeddings" in str(type(embeddings))
-    db_settings = CHROMA_OPENAI_SETTINGS if use_openai else CHROMA_SETTINGS
-
-    # Seleccionar el vector store correcto
-    use_openai = "OpenAIEmbeddings" in str(type(embeddings))
-    db_class = ChromaOpenai if use_openai else Chroma 
-    
-    
-    db = db_class(client=db_settings, embedding_function=embeddings)
-
-    retriever = db.as_retriever(search_kwargs={"k": target_source_chunks})
+    if embeddings:
+        st.write(f"Using embeddings: {type(embeddings).__name__}")
+        # Seleccionar la configuración correcta de Chroma settings
+        use_openai = "OpenAIEmbeddings" in str(type(embeddings))
+        db_settings = CHROMA_OPENAI_SETTINGS if use_openai else CHROMA_SETTINGS
+        db_class = ChromaOpenai if use_openai else Chroma 
+        db = db_class(client=db_settings, embedding_function=embeddings)
+        retriever = db.as_retriever(search_kwargs={"k": target_source_chunks})
+    else:
+        st.warning("No embeddings configured. Proceeding without retrieval functionality.")
+        retriever = None  # Sin embeddings, el flujo se limitará al modelo LLM.
     
     # Determinar el modelo LLM configurado
     llm_config = st.session_state["llm"]
@@ -65,24 +63,50 @@ def response(query:str) -> str:
         llm = Ollama(model=llm_config["model_name"],
                     callbacks=[] if args.mute_stream else [StreamingStdOutCallbackHandler()],
                     temperature=0,
-                    base_url=llm_config["ollama_host"])
+                    base_url=llm_config["ollama_host"],
+        )
+    elif "client" in llm_config and "model_name" in llm_config:
+        # Configurar modelo Grok
+        model_name = llm_config["model_name"]
+        client = llm_config["client"]
+        st.write(f"Using Grok model: {model_name}")
+        
+        
+        # Realizar la solicitud directamente al cliente de OpenAI (Grok)
+        def grok_query(client, model_name, user_query):
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are Grok, a chatbot inspired by the Hitchhiker's Guide to the Galaxy."},
+                    {"role": "user", "content": user_query},
+                ],
+                max_tokens=500,
+            )
+            return response.choices[0].message.content
+
+        return grok_query(client, model_name, query)    
     else:
         # Configurar modelo OpenAI
         st.write(f"Using OpenAI model: {llm_config}")
         llm = llm_config  # Este ya es un objeto LLM configurado desde `model_selector.py`
 
-    prompt = assistant_prompt()
-    
+    # Procesar el flujo completo si hay embeddings
+    if retriever:
+        prompt = assistant_prompt()
+        
 
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
 
 
-    rag_chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    return rag_chain.invoke(query)
+        rag_chain = (
+            {"context": retriever | format_docs, "question": RunnablePassthrough()}
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+        
+        return rag_chain.invoke(query)
+    else:
+        # Si no hay embeddings, directamente interactuar con el modelo LLM
+        return llm.predict(query)

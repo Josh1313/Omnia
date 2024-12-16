@@ -46,7 +46,7 @@ class MultiApp:
         with st.sidebar:        
             app = option_menu(
                 menu_title='Omnia AI 🤖',
-                options=['Home','Account','Chat','Files', 'Models'],
+                options=['Home','Account','Chat','KnowledgeBase', 'Models'],
                 icons=['house-fill','person-circle','chat-fill','file-earmark-text-fill','gear-fill'],
                 menu_icon=" :robot_face: ",
                 default_index=1,
@@ -65,7 +65,7 @@ class MultiApp:
             account.app()    
         if app == 'Chat':
             Chat.app()  
-        if app == 'Files':
+        if app == 'KnowledgeBase':
             Files.app()
         if app == 'Models':
             model_selector.app()

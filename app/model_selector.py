@@ -1,5 +1,7 @@
-import streamlit as st
+
+import os
 import openai
+import streamlit as st
 from openai import OpenAI, BadRequestError
 from subprocess import run, CalledProcessError, PIPE
 from langchain_community.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
@@ -8,7 +10,7 @@ from langchain_community.llms import Ollama
 from langchain_core.embeddings import Embeddings
 from Utils.streamlit_style import hide_streamlit_style
 from typing import Optional, Tuple, Any
-import os
+
 
 
 def app():
@@ -21,6 +23,7 @@ def app():
     st.title("Model Selector")
 
     # Leer lista de modelos dinámicamente desde variables de entorno
+    DEFAULT_GROK_BASE_URL = "https://api.x.ai/v1"
     model_list = os.getenv("MODEL_LIST", "llama3.2, gemma2:2b, tinyllama,  llama3,mistral,phi3,llama2,brxce/stable-diffusion-prompt-generator").split(",")
     embedding_model_list = os.getenv("EMBEDDING_MODEL_LIST", "all-MiniLM-L6-v2").split(",")
     ollama_host_default = os.getenv("OLLAMA_HOST", "http://ollama:11434")
@@ -53,7 +56,23 @@ def app():
             # Manejar errores genéricos
             st.error(f"An unexpected error occurred: {str(e)}")
             return False
-
+    
+    # Validate Grok API Key
+    def validate_grok_api_key(api_key: str, base_url: str) -> bool:
+        try:
+            client = OpenAI(api_key=api_key, base_url=base_url)
+            client.chat.completions.create(
+                model="grok-beta",
+                messages=[{"role": "user", "content": "Hello Grok"}],
+                max_tokens=5
+            )
+            return True
+        except BadRequestError as e:
+            st.warning(f"Invalid Grok API Key: {e.body.get('message', 'Unknown error')}")
+            return False
+        except Exception as e:
+            st.error(f"Unexpected error: {str(e)}")
+            return False
     
     def get_container_id(image_name: str, container_name: str) -> Optional[str]:
         """
@@ -138,25 +157,26 @@ def app():
         return False
     
     
-    def configure_model() -> Tuple[Optional[Any], Optional[Any], Optional[str], Optional[bool]]:
+    def configure_model() -> Tuple[Optional[Any], Optional[Any], Optional[str], Optional[str], Optional[str], Optional[bool]]:
         """
         Configura modelos y embeddings, permitiendo la selección entre OpenAI y modelos locales.
         """
         
         st.sidebar.subheader("Model Configuration")
-        model_type = st.sidebar.radio("Select Model Type:", options=["Local (Custom Models)", "OpenAI"], index=0)
+        model_type = st.sidebar.radio("Select Model Type:", options=["Local (Custom Models)", "OpenAI","Grok"], index=0)
         
-        llm, embeddings, openai_api_key = None, None, None
+        llm, embeddings, openai_api_key,xai_api_key, base_url = None, None, None, None, None
         use_openai = False
 
         if model_type == "OpenAI":
+            # OpenAI Configuration
             openai_api_key = st.sidebar.text_input("OpenAI API Key:", type="password", placeholder="Enter OpenAI API Key")
             if not openai_api_key:
                 st.sidebar.warning("OpenAI API Key is required to use OpenAI models.")
             else:
                 # Validar la clave API antes de proceder
                 if not validate_openai_api_key(openai_api_key):
-                    return None, None, None, False  # Detener la configuración si la clave es inválida
+                    return None, None, None, None, None, False  # Detener la configuración si la clave es inválida
             
             llm_model = st.sidebar.selectbox("Choose OpenAI LLM Model:", options=["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"], index=0)
             embedding_model = st.sidebar.selectbox("Choose OpenAI Embedding Model:", options=["text-embedding-ada-002"], index=0)
@@ -165,6 +185,21 @@ def app():
                 llm = ChatOpenAI(model=llm_model, openai_api_key=openai_api_key)
                 embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=openai_api_key)
                 use_openai = True
+        
+        elif model_type == "Grok":
+            # Grok Configuration (new addition)
+            xai_api_key  = st.sidebar.text_input("Grok API Key:", type="password", placeholder="Enter XAI API Key")
+            base_url = st.sidebar.text_input("Grok Base URL:", value=DEFAULT_GROK_BASE_URL)
+            if xai_api_key and validate_grok_api_key(xai_api_key, base_url):
+                grok_model = st.sidebar.selectbox("Choose Grok Model:", options=["grok-beta"])
+                
+                # Configurar cliente de Grok
+                client = OpenAI(api_key=xai_api_key, base_url=base_url)
+                llm = {"model_name": grok_model, "client": client}  # Almacenar modelo y cliente
+                embeddings = "None"  # No necesitas embeddings para Grok en este ejemplo
+            else:
+                st.sidebar.warning("Valid Grok API Key is required.")
+
                 
         else:
             # Selección dinámica de modelos locales
@@ -176,7 +211,7 @@ def app():
                 llm = {"model_name": local_model_name, "ollama_host": ollama_host}
             else:
                 st.error(f"Could not configure the model '{local_model_name}'. Please try again.")
-                return None, None, None, False  # Abort configuration
+                return None, None, None, None, None,  False  # Abort configuration
             
             embedding_model_name = st.sidebar.selectbox(
                 "Choose Embedding Model:",
@@ -185,17 +220,20 @@ def app():
             )
             embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
         
-        return llm, embeddings, openai_api_key, use_openai
+        return llm, embeddings, openai_api_key, xai_api_key, base_url,  use_openai
 
-    llm, embeddings, api_key, use_openai = configure_model()
-
+    llm, embeddings, openai_api_key, xai_api_key, base_url, use_openai = configure_model()
+    # Función para guardar la configuración en st.session_state
     if st.button("Guardar Configuración"):
         if llm and embeddings:
             st.session_state["llm"] = llm
-            st.session_state["embeddings"] = embeddings
-            st.session_state["api_key"] = api_key
+            st.session_state["embeddings"] = embeddings or "None"  # Asegurar que exista un valor, incluso si es None
+            st.session_state["openai_api_key"] = openai_api_key
+            st.session_state["xai_api_key"] = xai_api_key  # Guardar XAI_API_KEY
             st.session_state["use_openai"] = use_openai
-            if "ollama_host" in llm:
+            if base_url:  # Guardar base_url solo si es Grok
+                st.session_state["base_url"] = base_url
+            if isinstance(llm, dict) and "ollama_host" in llm:
                 st.session_state["ollama_host"] = llm["ollama_host"]
             st.success("Configuration saved successfully!")
         else:
@@ -208,5 +246,9 @@ def app():
         st.write(f"Embeddings: {st.session_state['embeddings']}")
     if "use_openai" in st.session_state:
         st.write(f"Use OpenAI: {st.session_state['use_openai']}")    
+    if "base_url" in st.session_state:
+        st.write(f"Grok Base URL: {st.session_state['base_url']}")
     if "ollama_host" in st.session_state:
         st.write(f"Ollama Host: {st.session_state['ollama_host']}")
+
+
