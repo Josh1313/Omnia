@@ -1,27 +1,26 @@
 import streamlit as st
-
 from streamlit_option_menu import option_menu
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 st.set_page_config(
-        page_title="Assistant",
+        page_title="Omnia AI",
 )
 
 st.markdown(
     """
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src=f"https://www.googletagmanager.com/gtag/js?id={os.getenv('analytics_tag')}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', os.getenv('analytics_tag'));
-        </script>
-    """, unsafe_allow_html=True)
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4DGD6BRXH1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-print(os.getenv('analytics_tag'))
+      gtag('config', 'G-4DGD6BRXH1');
+    </script>
+    """,
+    unsafe_allow_html=True
+)
 
 import home as home, account as account, Chat as Chat, Files as Files, model_selector as model_selector
 
@@ -46,7 +45,7 @@ class MultiApp:
         with st.sidebar:        
             app = option_menu(
                 menu_title='Omnia AI 🤖',
-                options=['Home','Account','Chat','KnowledgeBase', 'Models'],
+                options=['Home','Account','Chat','Knowledge', 'Models'],
                 icons=['house-fill','person-circle','chat-fill','file-earmark-text-fill','gear-fill'],
                 menu_icon=" :robot_face: ",
                 default_index=1,
@@ -65,7 +64,7 @@ class MultiApp:
             account.app()    
         if app == 'Chat':
             Chat.app()  
-        if app == 'KnowledgeBase':
+        if app == 'Knowledge':
             Files.app()
         if app == 'Models':
             model_selector.app()

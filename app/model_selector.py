@@ -93,35 +93,6 @@ def app():
             st.error(f"Unexpected error: {str(e)}")
             return False
     
-    def get_container_id(image_name: str, container_name: str) -> Optional[str]:
-        """
-        Retrieves the container ID of a running container by image name or container name.
-        """
-        try:
-            # Comando para obtener el ID del contenedor
-            command = (
-                f"docker ps --filter ancestor={image_name} --filter name={container_name} --format \"{{{{.ID}}}}\""
-            )
-            st.info(f"Executing command: {command}")  # Mensaje informativo en la UI
-
-            # Ejecutar el comando
-            result = run(command, shell=True, capture_output=True, text=True, check=True)
-
-            # Procesar la salida
-            container_id = result.stdout.strip()
-            if container_id:
-                st.success(f"Container ID found: {container_id}")
-                return container_id
-            else:
-                st.warning(f"No running container matches: ancestor={image_name}, name={container_name}")
-                return None
-
-        except FileNotFoundError:
-            st.error("Docker CLI not found. Ensure Docker is installed and in the PATH.")
-            return None
-        except CalledProcessError as e:
-            st.error(f"Failed to execute Docker command. Details: {e.stderr.strip()}")
-            return None
         
     def is_model_available(model_name: str, container_id: str) -> bool:
         """
@@ -136,25 +107,20 @@ def app():
             st.error(f"Error checking model availability: {e.stderr.strip()}")
             return False    
 
-    def ensure_model_downloaded(model_name: str, image_name: str = "ollama/ollama:latest", container_name: str = "omnia-ollama-1", max_retries: int = 3) -> bool:
+    def ensure_model_downloaded(model_name: str, container_name: str = "omnia-ollama-1", max_retries: int = 3) -> bool:
         """
         Ensures the specified model is downloaded in the running 'ollama' container.
         """
         st.info(f"Checking model availability: {model_name}...")
         
-        # Get the container ID dynamically
-        container_id = get_container_id(image_name, container_name)
-        if not container_id:
-            st.error("Could not find the required container to pull the model.")
-            return False
         
-        if is_model_available(model_name, container_id):
+        if is_model_available(model_name, container_name):
             st.success(f"Model '{model_name}' is already available!")
             return True
         
         # Si el modelo no está disponible, intenta descargarlo
         st.info(f"Downloading model '{model_name}'...")
-        pull_command = f"docker exec {container_id} ollama pull {model_name}"
+        pull_command = f"docker exec {container_name} ollama pull {model_name}"
         retry_count = 0
         
         while retry_count < max_retries:
