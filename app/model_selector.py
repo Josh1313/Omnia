@@ -93,13 +93,34 @@ def app():
             st.error(f"Unexpected error: {str(e)}")
             return False
     
-        
-    def is_model_available(model_name: str, container_id: str) -> bool:
+    def get_container_name(image_name: str) -> Optional[str]:
+        """
+        Obtiene el nombre de un contenedor en ejecución a partir del nombre de la imagen.
+        """
+        try:
+            # Comando para buscar el nombre del contenedor
+            command = f"docker ps --filter ancestor={image_name} --format \"{{{{.Names}}}}\""
+            st.info(f"Executing command: {command}")
+
+            result = run(command, shell=True, capture_output=True, text=True, check=True)
+            container_name = result.stdout.strip()
+            
+            if container_name:
+                st.info(f"Container name found: {container_name}")
+                return container_name
+            else:
+                st.info(f"No running container found for image: {image_name}")
+                return None
+        except CalledProcessError as e:
+            st.info(f"Failed to execute Docker command. Details: {e.stderr.strip()}")
+            return None
+            
+    def is_model_available(model_name: str, container_name: str) -> bool:
         """
         Verifica si un modelo ya está descargado en el contenedor de Ollama.
         """
         try:
-            check_command = f"docker exec {container_id} ollama list"
+            check_command = f"docker exec {container_name} ollama list"
             result = run(check_command.split(), capture_output=True, text=True, check=True)
             available_models = result.stdout.lower()
             return model_name.lower() in available_models
@@ -107,7 +128,7 @@ def app():
             st.error(f"Error checking model availability: {e.stderr.strip()}")
             return False    
 
-    def ensure_model_downloaded(model_name: str, container_name: str = "omnia-ollama-1", max_retries: int = 3) -> bool:
+    def ensure_model_downloaded(model_name: str, container_name: str, max_retries: int = 3) -> bool:
         """
         Ensures the specified model is downloaded in the running 'ollama' container.
         """
@@ -193,12 +214,17 @@ def app():
                 return None, None, None, None, None, False  # Detener si no hay modelo seleccionado
 
             ollama_host = st.sidebar.text_input("Enter Ollama Host:", value=ollama_host_default, help="Default: http://localhost:11434")
-            # Ensure the model is downloaded
-            if ensure_model_downloaded(local_model_name):
-                llm = {"model_name": local_model_name, "ollama_host": ollama_host}
+            container_name = get_container_name("licmartinez827899/omnia-ollama:1.0")
+            if container_name:
+                # Ensure the model is downloaded
+                if ensure_model_downloaded(local_model_name,container_name=container_name):
+                    llm = {"model_name": local_model_name, "ollama_host": ollama_host}
+                else:
+                    st.error(f"Could not configure the model '{local_model_name}'. Please try again.")
+                    return None, None, None, None, None,  False  # Abort configuration
             else:
-                st.error(f"Could not configure the model '{local_model_name}'. Please try again.")
-                return None, None, None, None, None,  False  # Abort configuration
+                st.error("Could not find the running container for the model. Ensure the container is up.")
+                return None, None, None, None, None, False
             
             embedding_model_name = st.sidebar.selectbox("Choose Embedding Model:",options=embedding_model_list,index=None)
             if not is_embedding_selected(embedding_model_name):

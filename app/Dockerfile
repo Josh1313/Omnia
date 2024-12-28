@@ -7,6 +7,7 @@ WORKDIR /app
 # Copia todo el contenido del directorio actual al directorio de trabajo
 COPY . .
 
+
 # Actualiza pip e instala las dependencias
 RUN pip install --upgrade pip
 

@@ -7,13 +7,13 @@ def app():
     
     # Verificación de autenticación
     if not st.session_state.get('authenticated', False):
-        st.warning("Por favor, inicia sesión para acceder al chat.")
+        st.warning("Please log in to access Chat.")
         return  # Detenemos la ejecución si el usuario no está autenticado
     
     # Verificación de modelo configurado
     if not st.session_state.get("llm") or not st.session_state.get("embeddings"):
-        st.warning("Por favor, selecciona un modelo antes de usar el chat.")
-        st.info("Ve a la pestaña de configuración para elegir un modelo.")
+        st.warning("Please select a model before using the chat.")
+        st.info("Go to the Models tab to choose a model..")
         return  # Detenemos la ejecución si no se ha configurado un modelo
     # Título de la aplicación Streamlit
     st.title("Omnia AI")

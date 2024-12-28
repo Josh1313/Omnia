@@ -1,7 +1,7 @@
 
 services:
   ollama: 
-    image: licmartinez827899/omnia-ollama:1.0  # Updated to use Docker Hub image
+    image: ollama/ollama:latest
     volumes:
       - /ollama/models:/ollama/models
     environment:
@@ -13,7 +13,7 @@ services:
    
 
   chroma1:
-    image: licmartinez827899/omnia-chroma:1.0  # Updated to use Docker Hub image
+    image: chromadb/chroma:0.5.1
 
     volumes:
       - index_data1:/chroma/.chroma/index
@@ -26,7 +26,7 @@ services:
       - net
     
   chroma2:
-    image:  licmartinez827899/omnia-chroma:1.0  # Updated to use Docker Hub image
+    image: chromadb/chroma:0.5.1
     volumes:
       - index_data2:/chroma/.chroma/index  # Volumen exclusivo para ChromaDB 2
     ports:
@@ -39,7 +39,7 @@ services:
 
 
   ui:
-    image: licmartinez827899/omnia:1.0  # Updated to use Docker Hub image
+    build: ./app
     ports:
       - 8080:8080
     volumes:
@@ -60,7 +60,7 @@ services:
       - net
 
   ngrok:
-    image: licmartinez827899/omnia-ngrok:1.0  # Updated to use Docker Hub image
+    image: ngrok/ngrok:latest
     restart: unless-stopped
     command:
       - "start"

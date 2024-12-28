@@ -19,8 +19,8 @@ def app():
     
     # Verificación de modelo configurado
     if not st.session_state.get("llm") or not st.session_state.get("embeddings"):
-        st.warning("Por favor, selecciona un modelo antes de usar el chat.")
-        st.info("Ve a la pestaña de configuración para elegir un modelo.")
+        st.warning("Please select a model before using Knowledge ..")
+        st.info("Go to the Models tab to choose a model.")
         return  # Detenemos la ejecución si no se ha configurado un modelo
     
     # Cargar los embeddings desde la configuración
@@ -67,7 +67,7 @@ def app():
     try:
         # Obtener los archivos almacenados en la base de datos
         files = get_unique_sources(db_settings,collection_name)
-        write_debug_log(f"Db settings in files.py : {db_settings} y sus collection name :{collection_name}")
+        write_debug_log(f"Db settings in files.py : {db_settings} and your collection name :{collection_name}")
         write_debug_log(f"Files DataFrame:{files}")
         
         # Agregar columna de eliminación

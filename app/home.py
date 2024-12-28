@@ -2,36 +2,47 @@
 import streamlit as st
 
 def app():
-    # Bienvenida
-    st.title("Bienvenido a Omnia RAG Solutions")
-    st.subheader("Empoderando a tu empresa con LLM")
+    # Welcome Message
+    st.title("Welcome to Omnia RAG Solutions")
+    st.subheader("Empowering Your Business with LLM")
 
-    # Explicación visual de RAG (Retrieval-Augmented Generation)
+    # Visual Explanation of RAG (Retrieval-Augmented Generation)
     st.markdown("""
-    ### ¿Qué es RAG y cómo beneficia a tu empresa?
-    RAG (Generación con Recuperación Aumentada) combina la búsqueda inteligente de información con modelos de lenguaje para ofrecer respuestas precisas y basadas en datos.
+    ### What is RAG and How Does It Benefit Your Business?
+    RAG (Retrieval-Augmented Generation) combines intelligent information retrieval with language models to deliver accurate, data-driven responses.
     """)
 
-    # Paso 1: Recuperación de Información
-    st.markdown("#### 🔍 Recuperación")
-    st.write("RAG primero busca en tus fuentes de datos internas para encontrar información relevante.")
+    # Step 1: Information Retrieval
+    st.markdown("#### 🔍 Retrieval")
+    st.write("RAG first searches your internal data sources to find relevant information.")
 
-    # Paso 2: Generación
-    st.markdown("#### 💡 Generación")
-    st.write("Con esa información, un modelo de lenguaje genera respuestas precisas y personalizadas para tus necesidades.")
+    # Step 2: Generation
+    st.markdown("#### 💡 Generation")
+    st.write("Using this information, a language model generates accurate and personalized responses to your needs.")
 
-    # Paso 3: Mejora Continua
-    st.markdown("#### 🔄 Mejora Continua")
-    st.write("Con cada interacción, el sistema se optimiza para ofrecer resultados más precisos y eficaces.")
+    # Step 3: Continuous Improvement
+    st.markdown("#### 🔄 Continuous Improvement")
+    st.write("With each interaction, the system optimizes itself to deliver more precise and effective results.")
 
-    # Explicación final sobre autenticación
-    st.write("Para acceder a todas las funcionalidades, crea una cuenta o inicia sesión con tu cuenta de Google o correo electrónico.")
 
-    # Redirección al registro
+    # Final Explanation on Authentication
+    st.write("To access all features, create an account or log in using your Google account or email.")
+
+    # Registration Redirection
     st.markdown("""
-    ### 📝 Crear una cuenta
-    Dirígete a la página de **Cuenta** para registrarte e iniciar tu viaje con RAG.
+    ### 📝 Create an Account
+    Navigate to the **Account** page to sign up and start your journey with RAG.
     """)
+    
+    # Note: 
+    st.info("If you wish to contact me, feel free to reach out via LinkedIn. For more topics related to data science, visit my YouTube channel https://www.youtube.com/@Data_Pathfinder or my website at https://josh1313.github.io/Joshweb.io/")
 
-    # Nota: Eliminación de la funcionalidad de publicación
-    st.info("La funcionalidad de publicación ha sido desactivada en esta versión. En su lugar, enfócate en explorar los beneficios de RAG para tu empresa.")
+    # Security Information
+    st.markdown("""
+    ### Security Notice
+    For external access, you can configure a tunnel using ngrok. Simply create an account on ngrok, generate an authentication token, and add it to your .env file. This will create a secure tunnel for your localhost, ensuring it is not vulnerable.
+
+    The app does not store cookies; it only saves your email for operational purposes. For transparency, all saved configurations are displayed, so you can review what is being stored. 
+
+    The application has a Apache License http://www.apache.org/licenses/.
+    """)
